@@ -1,14 +1,8 @@
 {
-  "functions": {
-    "api/contact.php": {
-      "runtime": "vercel-php@0.4.0"
-    },
-    "api/quote.php": {
-      "runtime": "vercel-php@0.4.0"
+  "builds": [
+    {
+      "src": "Dockerfile",
+      "use": "@vercel/docker"
     }
-  },
-  "routes": [
-    { "src": "/api/contact", "dest": "/api/contact.php" },
-    { "src": "/api/quote", "dest": "/api/quote.php" }
   ]
 }
