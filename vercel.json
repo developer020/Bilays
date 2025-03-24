@@ -1,14 +1,14 @@
 {
   "functions": {
-    "form/contact.php": {
+    "api/contact.php": {
       "runtime": "vercel-php@0.4.0"
     },
-    "form/quote.php": {
+    "api/quote.php": {
       "runtime": "vercel-php@0.4.0"
     }
   },
   "routes": [
-    { "src": "/form/contact", "dest": "/form/contact.php" },
-    { "src": "/form/quote", "dest": "/form/quote.php" }
+    { "src": "/api/contact", "dest": "/api/contact.php" },
+    { "src": "/api/quote", "dest": "/api/quote.php" }
   ]
 }
