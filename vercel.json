@@ -1,5 +1,7 @@
 {
   "functions": {
-    "api/quote.php": { "runtime": "vercel-php@0.6.0" }
+    "api/quote.php": {
+      "runtime": "vercel-php@0.5.2"
+    }
   }
 }
