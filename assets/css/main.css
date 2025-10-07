@@ -1812,7 +1812,7 @@ section,
 }
 
 .team .member .member-img {
-  margin: 0 80px;
+  margin: 0 auto;
   border-radius: 50%;
   overflow: hidden;
   position: relative;
