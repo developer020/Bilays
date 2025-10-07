@@ -1,43 +1,90 @@
 <?php
-  /**
-  * Requires the "PHP Email Form" library
-  * The "PHP Email Form" library is available only in the pro version of the template
-  * The library should be uploaded to: vendor/php-email-form/php-email-form.php
-  * For more info and help: https://bootstrapmade.com/php-email-form/
-  */
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
-  // Replace contact@example.com with your real receiving email address
-  $receiving_email_address = 'Info@bilays.com';
+require 'PHPMailer/src/Exception.php';
+require 'PHPMailer/src/PHPMailer.php';
 
-  if( file_exists($php_email_form = '../assets/vendor/php-email-form/php-email-form.php' )) {
-    include( $php_email_form );
-  } else {
-    die( 'Unable to load the "PHP Email Form" Library!');
-  }
+header('Content-Type: application/json');
 
-  $contact = new PHP_Email_Form;
-  $contact->ajax = true;
-  
-  $contact->to = $receiving_email_address;
-  $contact->cc = 'zamzam@bilays.com'; // Add CC email address here
-  $contact->from_name = $_POST['name'];
-  $contact->from_email = $_POST['email'];
-  $contact->subject = 'Request for a quote';
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    http_response_code(405);
+    echo json_encode(['status' => 'error', 'message' => 'Method Not Allowed']);
+    exit;
+}
 
-  // Uncomment below code if you want to use SMTP to send emails. You need to enter your correct SMTP credentials
-  /*
-  $contact->smtp = array(
-    'host' => 'example.com',
-    'username' => 'example',
-    'password' => 'pass',
-    'port' => '587'
-  );
-  */
+// Retrieve and sanitize form data
+$name = filter_var($_POST['name'] ?? '', FILTER_SANITIZE_STRING);
+$email = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
+$phone = filter_var($_POST['phone'] ?? '', FILTER_SANITIZE_STRING);
+$message = filter_var($_POST['message'] ?? '', FILTER_SANITIZE_STRING);
 
-  $contact->add_message( $_POST['name'], 'From');
-  $contact->add_message( $_POST['email'], 'Email');
-  $contact->add_message( $_POST['phone'], 'Phone');
-  $contact->add_message( $_POST['message'], 'Message', 10);
+// Validation
+$errors = [];
+if (empty($name)) $errors[] = 'Name is required';
+if (empty($email)) $errors[] = 'Email is required';
+if (empty($phone)) $errors[] = 'Phone is required';
+if (empty($message)) $errors[] = 'Message is required';
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Invalid email format';
 
-  echo $contact->send();
+if (!empty($errors)) {
+    http_response_code(400);
+    echo json_encode(['status' => 'error', 'messages' => $errors]);
+    exit;
+}
+
+$mail = new PHPMailer(true);
+
+try {
+    $mail->isMail();
+    
+    // PROPER SENDER CONFIGURATION (using user's email)
+    $mail->setFrom($email, $name); // Actual sender
+    $mail->addReplyTo($email, $name); // For replies
+    $mail->addAddress('info@bilays.com', 'Bilays Info'); // Recipient
+    $mail->addCC('zamzam@bilays.com'); // CC
+    
+    $mail->Subject = 'New Quote Request: ' . $name;
+    
+    $mail->isHTML(true);
+    $mail->Body = "
+        <h2>New Quote Request</h2>
+        <p><strong>From:</strong> $name</p>
+        <p><strong>Email:</strong> $email</p>
+        <p><strong>Phone:</strong> $phone</p>
+        <h3>Message:</h3>
+        <p>" . nl2br($message) . "</p>
+    ";
+    
+    $mail->AltBody = "Name: $name\nEmail: $email\nPhone: $phone\n\nMessage:\n$message";
+
+    // Instead of json_encode():
+    if ($mail->send()) {
+        http_response_code(200);
+        echo "Your quote request has been sent successfully. Thank you!";
+    } else {
+        http_response_code(500);
+        echo "Failed to send message. Please try again later.";
+    }
+    // if ($mail->send()) {
+    //     echo json_encode(['status' => 'success', 'message' => 'Your quote request has been sent successfully. Thank you!']);
+    // } else {
+    //     throw new Exception('Mail sending failed');
+    // }
+} catch (Exception $e) {
+    // Fallback using proper sender headers
+    $headers = "From: $name <$email>\r\n";
+    $headers .= "Reply-To: $email\r\n";
+    $headers .= "CC: zamzam@bilays.com\r\n";
+    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+    
+    $body = "New Quote Request\n\nFrom: $name\nEmail: $email\nPhone: $phone\n\nMessage:\n$message";
+
+    if (mail('info@bilays.com', 'New Quote Request: ' . $name, $body, $headers)) {
+        echo json_encode(['status' => 'success', 'message' => 'Your quote request has been sent successfully. Thank you!']);
+    } else {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Failed to send message. Please try again later.']);
+    }
+}
 ?>
